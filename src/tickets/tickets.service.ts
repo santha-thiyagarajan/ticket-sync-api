@@ -21,7 +21,7 @@ export class TicketsService {
     return this.ticketRepository.save(ticket);
   }
 
-  async findAll(queryParams: TicketQueryDto): Promise<[Ticket[], number]> {
+  async findAll(queryParams: TicketQueryDto): Promise<[Ticket[], number, { openCount: number; inProgressCount: number; resolvedCount: number }]> {
     const { 
       status, priority, assignedTo, createdBy, search, 
       page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC' 
@@ -41,13 +41,34 @@ export class TicketsService {
     }
 
     // Execute query with pagination, sorting, and relations
-    return this.ticketRepository.findAndCount({
+    const [tickets, totalCount] = await this.ticketRepository.findAndCount({
       where,
       take: limit,
       skip: (page - 1) * limit,
       order: { [sortBy]: sortOrder },
       relations: ['creator', 'assignee'], // Include related user entities
     });
+
+    // Get counts for different ticket statuses
+    const openCount = await this.ticketRepository.count({
+      where: { status: 'open' },
+    });
+
+    const inProgressCount = await this.ticketRepository.count({
+      where: { status: 'in_progress' },
+    });
+
+    const resolvedCount = await this.ticketRepository.count({
+      where: { status: 'resolved' },
+    });
+
+    const statusCounts = {
+      openCount,
+      inProgressCount,
+      resolvedCount,
+    };
+
+    return [tickets, totalCount, statusCounts];
   }
 
   async findOne(id: number): Promise<Ticket> {

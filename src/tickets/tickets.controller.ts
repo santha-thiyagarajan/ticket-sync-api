@@ -5,6 +5,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { TicketQueryDto } from './dto/ticket-query.dto';
 import { ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Ticket } from './entities/ticket.entity';
+import { PaginatedTicketsResponse } from './dto/ticket-response.dto';
 
 @ApiTags('tickets')
 @Controller('tickets')
@@ -22,29 +23,16 @@ export class TicketsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all tickets with filters and pagination' })
+  @ApiOperation({ 
+    summary: 'Get all tickets with filters and pagination',
+    description: 'Returns a paginated list of tickets with metadata including status counts (open, in progress, resolved)'
+  })
   @ApiOkResponse({ 
-    description: 'Returns a list of tickets with pagination metadata.',
-    schema: {
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/Ticket' }
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            totalCount: { type: 'number' },
-            page: { type: 'number' },
-            limit: { type: 'number' },
-            totalPages: { type: 'number' }
-          }
-        }
-      }
-    }
+    description: 'Returns a list of tickets with pagination metadata and status counts.',
+    type: PaginatedTicketsResponse
   })
   async findAll(@Query(new ValidationPipe({ transform: true })) query: TicketQueryDto) {
-    const [tickets, totalCount] = await this.ticketsService.findAll(query);
+    const [tickets, totalCount, statusCounts] = await this.ticketsService.findAll(query);
     
     const page = query.page || 1;
     const limit = query.limit || 10;
@@ -57,6 +45,7 @@ export class TicketsController {
         page,
         limit,
         totalPages,
+        ...statusCounts
       }
     };
   }

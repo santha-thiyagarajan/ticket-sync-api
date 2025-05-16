@@ -9,9 +9,14 @@ export type TicketPriority = 'low' | 'medium' | 'high' | 'critical';
 export class Ticket {
   @ApiProperty({
     description: 'Unique identifier for the ticket',
-    example: 1,
+    example: 1000000,
   })
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryGeneratedColumn({
+    type: 'int',
+    name: 'id',
+    comment: 'Unique identifier for the ticket',
+    unsigned: true,
+  })
   id: number;
 
   @ApiProperty({
